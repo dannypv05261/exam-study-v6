@@ -1,6 +1,7 @@
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
+import java.util.Scanner;
 import java.util.StringTokenizer;
 
 /* SpreadSheet implements an array of cells within a graphical
@@ -47,6 +48,7 @@ public class SpreadSheet extends JFrame {
     //   data in cells[][].
     private class Cell {
         String formula; // the formula from which the value is computed
+        String fullPrecisionValue;
         Boolean valid; // cellsTF has correct current value
         Boolean bottom; // value is undefined
         
@@ -56,6 +58,7 @@ public class SpreadSheet extends JFrame {
         
         public void init() {
         	formula = "";
+        	fullPrecisionValue = "";
         	valid = false;
         	bottom = false;
         }
@@ -78,7 +81,7 @@ public class SpreadSheet extends JFrame {
     // set a cell to a value or a formula (during evaluate(), the
     // field will be evaluated and copied to the displayed text field.
 	public void setCell(int row, int col, String field) {
-		cells[row][col].formula = field;
+        cells[row][col].formula = this.formatText(field);
 	}
     
     // look up text for a cell
@@ -165,6 +168,35 @@ public class SpreadSheet extends JFrame {
         return null;
     }
     
+    public String formatText(String value){
+    	Double number = getNumber(value);
+    	if(value.length() > 8 && number != null){
+    		double tmpNum = number.doubleValue();
+    		if(tmpNum > 1.0d && (tmpNum % 1.0d) > 0){
+    			return String.format("%.7g", tmpNum);
+    		} else {
+    			return String.format("%.3g", tmpNum);
+    		}
+    	} else {
+    		return value;
+    	}
+    }
+    
+    
+    @SuppressWarnings("resource")
+	public Double getNumber(String tok){
+        try{
+             Scanner scanner = new Scanner(tok);
+             if(scanner.hasNextDouble()){
+                 return scanner.nextDouble();
+             } else {
+                 return null;
+             }
+        }catch(Exception e){
+            return null;
+        }
+    }
+    
     // evaluate a given cell. Cells can depend on other cells. To prevent
     // infinite recursion in the case of cycles, depth keeps track of the
     // length of the dependency chain. The longest chain involves all cells
@@ -243,9 +275,10 @@ public class SpreadSheet extends JFrame {
         String f = cells[r][c].formula;
         // update the formula if it is just a value (non-'=' prefix)
         if (f.length() <= 0 || f.charAt(0) != '=') {
-            cells[r][c].formula = cell.getText();
+            cells[r][c].formula = formatText(cell.getText());
+            cells[r][c].fullPrecisionValue = cell.getText();
             if (!ignoreTextFieldAction) {
-                formula.setText(cells[r][c].formula);
+                formula.setText(cells[r][c].fullPrecisionValue);
             }
         }
         evaluate();
