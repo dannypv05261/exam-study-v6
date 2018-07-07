@@ -4,6 +4,10 @@
 // should be modified and extended to meet the specifications.
 
 import java.io.IOException;
+import java.util.Arrays;
+
+import com.csvreader.CsvReader;
+import com.csvreader.CsvWriter;
 
 
 public class StatsCsv {
@@ -29,14 +33,43 @@ public class StatsCsv {
     }
     
     public void writeSheet() throws IOException {
-        // 
-        // to be completed
+        CsvWriter writer = new CsvWriter(outFile);
+        for(int i = 0; i < sheet.length; i++){
+        	String[] cells = sheet[i];
+        	for(int j = 0; j < cells.length; j++){
+        		String cell = sheet[i][j];
+        		if(cell != null){
+        			writer.write(cell);
+        		}
+        	}
+    		writer.endRecord();
+        }
+        writer.flush();
+        writer.close();
     	//  Do not change the signature of this method.
     }
 
     public void readSheet() throws IOException {
-        // 
-        // to be completed
+        CsvReader reader = new CsvReader(inFile);
+        
+        int i = 0;
+        int j = 0;
+        
+        if(reader.readHeaders()){
+        	this.sheet[i] = reader.getHeaders();
+        	j = reader.getHeaderCount();
+        	i++;
+        }
+        
+        for(; i < MAXROW && reader.readRecord(); i++){
+        	this.sheet[i] = Arrays.copyOf(reader.getValues(), reader.getColumnCount());
+        	j = Math.max(reader.getColumnCount(), j);
+        }
+        
+        this.setRows(i);
+        this.setCols(j);
+        
+        reader.close();
     	//  Do not change the signature of this method.
     }
 
@@ -51,6 +84,11 @@ public class StatsCsv {
 
     public int getCols() {
     	return colsUsed;
+    }
+    
+    public int setCols(int r) {
+    	colsUsed = r;
+        return colsUsed;
     }
     
     public String[][] getData() {
