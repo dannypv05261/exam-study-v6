@@ -129,6 +129,11 @@ public class SpreadSheet extends JFrame {
                                Double.parseDouble(y.trim()));
     }
     
+    public String getTokenAndTruncateWrtieSpace(StringTokenizer tokens){
+    	String token = tokens.nextToken().trim();
+    	return (token != null && !token.isEmpty()) ? token : null;
+    }
+    
     // parse and evaluate formula after it has been broken into tokens
     // formulas are tokens containing either
     // 1. references to cells of the form Lnn, where
@@ -140,14 +145,14 @@ public class SpreadSheet extends JFrame {
     public String parseFormula(StringTokenizer tokens, int depth) 
             throws NumberFormatException {
         if (tokens.hasMoreTokens()) {
-            String tok = tokens.nextToken();
+            String tok = this.getTokenAndTruncateWrtieSpace(tokens);
             tok = evaluateToken(tok, depth);
             if (tok == null) return null;
             while (tokens.hasMoreTokens()) {
-                String tok2 = tokens.nextToken();
+                String tok2 = this.getTokenAndTruncateWrtieSpace(tokens);
                 if (tok2 == null) return null;
                 if (!tokens.hasMoreTokens()) return null;
-                String tok3 = tokens.nextToken();
+                String tok3 = this.getTokenAndTruncateWrtieSpace(tokens);
                 tok3 = evaluateToken(tok3, depth);
                 if (tok3 == null) return null;
                 if (tok2.equals("+")) {
