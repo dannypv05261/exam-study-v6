@@ -81,7 +81,7 @@ public class SpreadSheet extends JFrame {
     // set a cell to a value or a formula (during evaluate(), the
     // field will be evaluated and copied to the displayed text field.
 	public void setCell(int row, int col, String field) {
-        cells[row][col].formula = this.formatText(field);
+        cells[row][col].formula = field;
 	}
     
     // look up text for a cell
@@ -104,7 +104,7 @@ public class SpreadSheet extends JFrame {
                     evaluate(row, col, depth + 1);
                 }
                 if (cells[row][col].bottom) return null;
-                return cellsTF[row][col].getText();
+                return cells[row][col].fullPrecisionValue;
             }
         }
         return null;
@@ -213,7 +213,9 @@ public class SpreadSheet extends JFrame {
                         (tokens.nextToken().equals("="))) {
                         String val = parseFormula(tokens, depth);
                         if (val != null) {
-                            cellsTF[r][c].setText(val);
+                        	cells[r][c].fullPrecisionValue = val;
+                        	String formattedValue = this.formatText(val);
+                            cellsTF[r][c].setText(formattedValue);
                             cells[r][c].valid = true;
                             return;
                         }
@@ -226,7 +228,9 @@ public class SpreadSheet extends JFrame {
             cells[r][c].valid = true;
             cellsTF[r][c].setText("!!!");
         } else { // in case edits were made to cells, need to copy to cellsTF
-            cellsTF[r][c].setText(formula);
+        	cells[r][c].fullPrecisionValue = formula;
+        	String formattedValue = this.formatText(formula);
+            cellsTF[r][c].setText(formattedValue);
         }
     }
     
@@ -274,12 +278,11 @@ public class SpreadSheet extends JFrame {
         int c = loc.y;
         String f = cells[r][c].formula;
         // update the formula if it is just a value (non-'=' prefix)
-        if (f.length() <= 0 || f.charAt(0) != '=') {
-            cells[r][c].formula = formatText(cell.getText());
-            cells[r][c].fullPrecisionValue = cell.getText();
-            if (!ignoreTextFieldAction) {
-                formula.setText(cells[r][c].fullPrecisionValue);
-            }
+        if ((f.length() <= 0 || f.charAt(0) != '=') && !new Scanner(f).hasNextDouble()) {
+        	 cells[r][c].formula = cell.getText();
+             if (!ignoreTextFieldAction) {
+                 formula.setText(cells[r][c].formula);
+             }
         }
         evaluate();
     }
