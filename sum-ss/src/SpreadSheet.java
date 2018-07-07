@@ -1,6 +1,8 @@
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.StringTokenizer;
 
 /* SpreadSheet implements an array of cells within a graphical
@@ -129,6 +131,76 @@ public class SpreadSheet extends JFrame {
                                Double.parseDouble(y.trim()));
     }
     
+    protected String sum(String firstTok, String secondTok, int depth) throws NumberFormatException {
+        List<String> columns = this.generateCells(firstTok, secondTok);
+        
+        if(columns == null){
+            return null;
+        }
+        
+        String result = null;
+        for(String cell: columns){
+            if(result == null){
+                result = this.evaluateToken(cell, depth);
+            } else {
+                result = this.add(result, evaluateToken(cell, depth));
+            }
+        }
+        
+        return result;
+   
+    }
+    
+    public char getCol(String tok) {
+        return tok.charAt(0);
+    }
+    
+    public int getRow(String tok) {
+        return Integer.parseInt(tok.substring(1));
+    }
+    
+    protected List<String> generateCells(String firstTok, String secondTok) throws NumberFormatException {
+        
+        int firstTokRow = getRow(firstTok);
+        int firstTokCol = getCol(firstTok) - 'A';
+        int secondTokRow = getRow(secondTok);
+        int secondTokCol = getCol(secondTok) - 'A';
+        
+        List<String> columns = new ArrayList<String>();
+        if(firstTokCol == secondTokCol){
+            int min = Math.min(firstTokRow, secondTokRow);
+            int max = Math.max(firstTokRow, secondTokRow);
+            for(int i = 0; i <= max - min; i++){
+                columns.add(Character.toString((char) ('A' + firstTokCol)) + (min + i));
+            }
+            return columns;
+        } else if (firstTokRow == secondTokRow){
+            int min = Math.min(firstTokCol, secondTokCol);
+            int max = Math.max(firstTokCol, secondTokCol);
+            for(int i = 0; i <= max - min; i++){
+                columns.add(Character.toString((char) ('A' + min + i)) + firstTokRow);
+            }
+                return columns;
+        } else {
+            return null;
+        }  
+    }
+    
+    public String evaluteWrapper(StringTokenizer tokens, int depth){
+        String tok = tokens.nextToken();
+        if("SUM".equals(tok)){
+            tokens.nextToken();
+            String firstTok = tokens.nextToken();
+            tokens.nextToken();
+            String secondTok = tokens.nextToken();
+            tokens.nextToken();
+            tok = this.sum(firstTok, secondTok, depth);
+        } else {
+            tok = evaluateToken(tok, depth);  //A1
+        }
+        return tok;
+    }
+    
     // parse and evaluate formula after it has been broken into tokens
     // formulas are tokens containing either
     // 1. references to cells of the form Lnn, where
@@ -140,15 +212,13 @@ public class SpreadSheet extends JFrame {
     public String parseFormula(StringTokenizer tokens, int depth) 
             throws NumberFormatException {
         if (tokens.hasMoreTokens()) {
-            String tok = tokens.nextToken();
-            tok = evaluateToken(tok, depth);
+            String tok = this.evaluteWrapper(tokens, depth);
             if (tok == null) return null;
             while (tokens.hasMoreTokens()) {
                 String tok2 = tokens.nextToken();
                 if (tok2 == null) return null;
                 if (!tokens.hasMoreTokens()) return null;
-                String tok3 = tokens.nextToken();
-                tok3 = evaluateToken(tok3, depth);
+                String tok3 = this.evaluteWrapper(tokens, depth);
                 if (tok3 == null) return null;
                 if (tok2.equals("+")) {
                     tok = add(tok, tok3);
@@ -176,7 +246,7 @@ public class SpreadSheet extends JFrame {
             try {
                 if (depth <= maxRows * maxCols) {
                     StringTokenizer tokens = 
-                            new StringTokenizer(formula, "=+*/-", true);
+                            new StringTokenizer(formula, "=+*/-=(:)", true);
                     if (tokens.hasMoreTokens() && 
                         (tokens.nextToken().equals("="))) {
                         String val = parseFormula(tokens, depth);
