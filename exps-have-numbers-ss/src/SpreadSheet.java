@@ -1,6 +1,7 @@
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
+import java.util.Scanner;
 import java.util.StringTokenizer;
 
 /* SpreadSheet implements an array of cells within a graphical
@@ -129,41 +130,63 @@ public class SpreadSheet extends JFrame {
                                Double.parseDouble(y.trim()));
     }
     
-    // parse and evaluate formula after it has been broken into tokens
-    // formulas are tokens containing either
-    // 1. references to cells of the form Lnn, where
-    //    L is an upper-case letter and nn is one or two decimal digits, or
-    // 2. strings (including decimal integers and floats)
-    // formulas can have any number of tokens separated by operators, which
-    //    can be *, +, /, or -. Operations are performed left to right, with
-    //    no regard for operator precedence.
-    public String parseFormula(StringTokenizer tokens, int depth) 
-            throws NumberFormatException {
-        if (tokens.hasMoreTokens()) {
-            String tok = tokens.nextToken();
-            tok = evaluateToken(tok, depth);
-            if (tok == null) return null;
-            while (tokens.hasMoreTokens()) {
-                String tok2 = tokens.nextToken();
-                if (tok2 == null) return null;
-                if (!tokens.hasMoreTokens()) return null;
-                String tok3 = tokens.nextToken();
-                tok3 = evaluateToken(tok3, depth);
-                if (tok3 == null) return null;
-                if (tok2.equals("+")) {
-                    tok = add(tok, tok3);
-                } else if (tok2.equals("*")) {
-                	tok = multiply(tok, tok3);
-                } else if (tok2.equals("/")) {
-                	tok = divide(tok, tok3);
-                } else if (tok2.equals("-")) {
-                	tok = subtract(tok, tok3);
-                } else return null; // invalid operator
-            }
-            return tok;
-        }
-        return null;
+    @SuppressWarnings("resource")
+	public String evaluteWrapper(StringTokenizer tokens, int depth){
+		String tok = tokens.nextToken();
+		String pureValue = this.getPureValue(tok);
+		if(pureValue != null){
+			return pureValue;
+		} else {
+			return evaluateToken(tok, depth);
+		}
+   }
+    
+    public String getPureValue(String tok){
+		try{
+			 Scanner scanner = new Scanner(tok);
+			 if(scanner.hasNextDouble()){
+				 return String.valueOf(scanner.nextDouble());
+			 } else {
+				 return null;
+			 }
+		}catch(Exception e){
+			return null;
+		}
     }
+   
+   // parse and evaluate formula after it has been broken into tokens
+   // formulas are tokens containing either
+   // 1. references to cells of the form Lnn, where
+   //    L is an upper-case letter and nn is one or two decimal digits, or
+   // 2. strings (including decimal integers and floats)
+   // formulas can have any number of tokens separated by operators, which
+   //    can be *, +, /, or -. Operations are performed left to right, with
+   //    no regard for operator precedence.
+   public String parseFormula(StringTokenizer tokens, int depth) 
+           throws NumberFormatException {
+       if (tokens.hasMoreTokens()) {
+           String tok = evaluteWrapper(tokens, depth);
+           if (tok == null) return null;
+           while (tokens.hasMoreTokens()) {
+               String tok2 = tokens.nextToken();
+               if (tok2 == null) return null;
+               if (!tokens.hasMoreTokens()) return null;
+               String tok3 = evaluteWrapper(tokens, depth);
+               if (tok3 == null) return null;
+               if (tok2.equals("+")) {
+                   tok = add(tok, tok3);
+               } else if (tok2.equals("*")) {
+               	tok = multiply(tok, tok3);
+               } else if (tok2.equals("/")) {
+               	tok = divide(tok, tok3);
+               } else if (tok2.equals("-")) {
+               	tok = subtract(tok, tok3);
+               } else return null; // invalid operator
+           }
+           return tok;
+       }
+       return null;
+   }
     
     // evaluate a given cell. Cells can depend on other cells. To prevent
     // infinite recursion in the case of cycles, depth keeps track of the
