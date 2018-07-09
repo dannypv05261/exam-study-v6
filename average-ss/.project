@@ -14,4 +14,16 @@
 	<natures>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>junit.jar</name>
+			<type>2</type>
+			<location>C:/usr/lib/eclipse/dropins/jdt/plugins/org.junit_4.8.2.v4_8_2_v20110321-1705/junit.jar</location>
+		</link>
+		<link>
+			<name>org.hamcrest.core_1.1.0.jar</name>
+			<type>2</type>
+			<location>C:/usr/lib/eclipse/dropins/jdt/plugins/org.hamcrest.core_1.1.0.jar</location>
+		</link>
+	</linkedResources>
 </projectDescription>
