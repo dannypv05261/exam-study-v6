@@ -1,6 +1,10 @@
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+import java.util.Stack;
 import java.util.StringTokenizer;
 
 /* SpreadSheet implements an array of cells within a graphical
@@ -129,6 +133,39 @@ public class SpreadSheet extends JFrame {
                                Double.parseDouble(y.trim()));
     }
     
+    public String evaluteWrapper(String tok, int depth){
+        String pureValue = this.getPureValue(tok);
+        if(pureValue != null){
+            return pureValue;
+        } else {
+            return evaluateToken(tok, depth);
+        }
+   }
+    
+    @SuppressWarnings("resource")
+	public String getPureValue(String tok){
+        try{
+             Scanner scanner = new Scanner(tok);
+             if(scanner.hasNextDouble()){
+                 return String.valueOf(scanner.nextDouble());
+             } else {
+                 return null;
+             }
+        }catch(Exception e){
+            return null;
+        }
+    }
+    
+    public int adjustNumberOfbracket(String tok){
+    	if("(".equals(tok)){
+    		return 1;
+    	} else if(")".equals(tok)){
+    		return -1;
+    	} else {
+    		return 0;
+    	}
+    }
+    
     // parse and evaluate formula after it has been broken into tokens
     // formulas are tokens containing either
     // 1. references to cells of the form Lnn, where
@@ -137,32 +174,106 @@ public class SpreadSheet extends JFrame {
     // formulas can have any number of tokens separated by operators, which
     //    can be *, +, /, or -. Operations are performed left to right, with
     //    no regard for operator precedence.
-    public String parseFormula(StringTokenizer tokens, int depth) 
+	public String parseFormula(StringTokenizer tokens, int depth) 
             throws NumberFormatException {
-        if (tokens.hasMoreTokens()) {
+    	
+    	Stack<String> stack = new Stack<String>();
+    	
+    	while(tokens.hasMoreTokens()){
             String tok = tokens.nextToken();
-            tok = evaluateToken(tok, depth);
-            if (tok == null) return null;
-            while (tokens.hasMoreTokens()) {
-                String tok2 = tokens.nextToken();
-                if (tok2 == null) return null;
-                if (!tokens.hasMoreTokens()) return null;
-                String tok3 = tokens.nextToken();
-                tok3 = evaluateToken(tok3, depth);
-                if (tok3 == null) return null;
-                if (tok2.equals("+")) {
-                    tok = add(tok, tok3);
-                } else if (tok2.equals("*")) {
-                	tok = multiply(tok, tok3);
-                } else if (tok2.equals("/")) {
-                	tok = divide(tok, tok3);
-                } else if (tok2.equals("-")) {
-                	tok = subtract(tok, tok3);
-                } else return null; // invalid operator
+            if(tok == null) return null;
+            
+            String evalutedToken = evaluateToken(tok, depth);
+            
+            Scanner scanner = null;
+            if(evalutedToken != null){
+            	scanner = new Scanner(evalutedToken);
             }
-            return tok;
+            
+            if(scanner != null && scanner.hasNextDouble()){ // is number which can be evaluated
+            	stack.push(evalutedToken);
+            } else { // */+-() or other string
+            	
+            	//when meeting ), the program sum up all saved values until the closest (
+            	
+            	if(!")".equals(tok)){ // */+-(  or other string
+            		stack.push(tok);
+            	} else {
+            		List<String> formulaInParenthese = new ArrayList<String>();
+            		while(!stack.isEmpty()){
+            			String tmp = stack.pop();
+            			if("(".equals(tmp)){ // break the loop when it reaches closest (ss
+            				break;
+            			} else {
+            				formulaInParenthese.add(0, tmp);
+            			}
+            		}
+            		
+            		//break a parentheses
+            		if(formulaInParenthese.size() == 1){ // something like =(A1)
+            			stack.push(formulaInParenthese.get(0));
+            		} else {
+	            		for(int i = 0; i < formulaInParenthese.size(); i = i + 3){
+	            			String num1;
+	            			String num2;
+	            			String operator;;
+	            			if(!stack.isEmpty() && formulaInParenthese.get(i).matches("\\+|\\-|\\*|\\/")){
+		            			//2nd or later round calculation: get back the last result
+	            				num1 = stack.pop();
+		            			num2 = formulaInParenthese.get(i + 1);
+		            			operator = formulaInParenthese.get(i);
+	            			} else if(formulaInParenthese.size() >= 3){
+	            				//1st round calculation
+	            				num1 = formulaInParenthese.get(i);
+		            			num2 = formulaInParenthese.get(i + 2);
+		            			operator = formulaInParenthese.get(i + 1);
+	            			}else {
+	            				return null;
+	            			}
+
+	            			//put the result to stack for further calculation
+	            			stack.push(this.calcualte(num1, num2, operator));
+	            		}
+            		}
+            	}
+            }
+            
+    	}
+    	
+    	//sum up all numbers which are not in parentheses now
+    	String token = "0.0";
+    	String firstOperator = "+";
+    	stack.add(0, firstOperator);
+    	
+    	// the size must be is even
+    	if(stack.size() % 2 != 0){
+    		return null;
+    	}
+    	
+    	for(int j = 0; j < stack.size(); j = j + 2){
+    		String num1 = token;
+			String num2 = stack.get(j + 1);
+			String operator = stack.get(j);
+			token = this.calcualte(num1, num2, operator);
+    	}
+    	
+        return token;
+    }
+    
+    public String calcualte(String tok1, String tok3, String tok2){
+    	String tok = null;
+        if (tok2.equals("+")) {
+            tok = add(tok1, tok3);
+        } else if (tok2.equals("*")) {
+        	tok = multiply(tok1, tok3);
+        } else if (tok2.equals("/")) {
+        	tok = divide(tok1, tok3);
+        } else if (tok2.equals("-")) {
+        	tok = subtract(tok1, tok3);
+        } else {
+        	// invalid operator
         }
-        return null;
+        return tok;
     }
     
     // evaluate a given cell. Cells can depend on other cells. To prevent
@@ -176,7 +287,7 @@ public class SpreadSheet extends JFrame {
             try {
                 if (depth <= maxRows * maxCols) {
                     StringTokenizer tokens = 
-                            new StringTokenizer(formula, "=+*/-", true);
+                            new StringTokenizer(formula, "=+*/-()", true);
                     if (tokens.hasMoreTokens() && 
                         (tokens.nextToken().equals("="))) {
                         String val = parseFormula(tokens, depth);
