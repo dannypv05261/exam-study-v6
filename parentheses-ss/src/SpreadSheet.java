@@ -133,39 +133,6 @@ public class SpreadSheet extends JFrame {
                                Double.parseDouble(y.trim()));
     }
     
-    public String evaluteWrapper(String tok, int depth){
-        String pureValue = this.getPureValue(tok);
-        if(pureValue != null){
-            return pureValue;
-        } else {
-            return evaluateToken(tok, depth);
-        }
-   }
-    
-    @SuppressWarnings("resource")
-	public String getPureValue(String tok){
-        try{
-             Scanner scanner = new Scanner(tok);
-             if(scanner.hasNextDouble()){
-                 return String.valueOf(scanner.nextDouble());
-             } else {
-                 return null;
-             }
-        }catch(Exception e){
-            return null;
-        }
-    }
-    
-    public int adjustNumberOfbracket(String tok){
-    	if("(".equals(tok)){
-    		return 1;
-    	} else if(")".equals(tok)){
-    		return -1;
-    	} else {
-    		return 0;
-    	}
-    }
-    
     // parse and evaluate formula after it has been broken into tokens
     // formulas are tokens containing either
     // 1. references to cells of the form Lnn, where
@@ -252,9 +219,9 @@ public class SpreadSheet extends JFrame {
     	
     	for(int j = 0; j < stack.size(); j = j + 2){
     		String num1 = token;
-			String num2 = stack.get(j + 1);
-			String operator = stack.get(j);
-			token = this.calcualte(num1, num2, operator);
+		String num2 = stack.get(j + 1);
+		String operator = stack.get(j);
+		token = this.calcualte(num1, num2, operator);
     	}
     	
         return token;
