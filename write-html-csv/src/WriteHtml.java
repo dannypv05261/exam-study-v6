@@ -2,6 +2,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import com.csvreader.*;
 
 public class WriteHtml {
@@ -16,7 +19,7 @@ public class WriteHtml {
     		String result = object.transform(outFileName, data);
     		object.output(outFileName, result);
     	}catch(Exception e){
-    		System.out.println(e);
+    		Logger.getGlobal().log(Level.SEVERE, e.getMessage(), e);
     	}
     	//  Do not change the signature of this method.
     }
