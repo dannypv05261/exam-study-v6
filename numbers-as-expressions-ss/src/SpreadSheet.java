@@ -1,6 +1,11 @@
 import java.awt.*;
 import java.awt.event.*;
+
 import javax.swing.*;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
 import java.util.StringTokenizer;
 
 /* SpreadSheet implements an array of cells within a graphical
@@ -129,6 +134,73 @@ public class SpreadSheet extends JFrame {
                                Double.parseDouble(y.trim()));
     }
     
+     @SuppressWarnings("resource")
+     public String evaluteWrapper(StringTokenizer tokens, int depth){
+    	 
+    	List<String> minusOperators = new ArrayList<String>();
+  		String tok = null;
+  		while(tokens != null && tokens.hasMoreTokens()){
+  			String tmpTok = tokens.nextToken();	
+  			if (tmpTok.equals("+") || tmpTok.equals("/") || tmpTok.equals("*")  || tmpTok.equals("(") || tmpTok.equals(")")) {
+  				//do nothing
+             } else if (tmpTok.equals("-")) {
+         		minusOperators.add("-1");
+             } else {
+             	tok=tmpTok;
+             	break;
+             }
+  		}
+  		
+  		String result = tok;
+  		if(tok != null){
+	  		String pureValue = this.getPureValue(result);
+	  		result = pureValue != null && !pureValue.isEmpty() ? pureValue : evaluateToken(result, depth);
+	  		while(result != null && minusOperators.size() > 0){
+	  			result = this.multiply(minusOperators.remove(0), result);
+	  		}
+  		}
+  		
+  		return result;
+    }
+     
+    public String extractOperator(StringTokenizer tokens){
+    	String tok = null;
+  		while(tokens != null && tokens.hasMoreTokens()){
+  			String tmpTok = tokens.nextToken();	
+  			if (tmpTok.equals("(") || tmpTok.equals(")")) {
+  				tok="";
+             } else {
+             	tok=tmpTok;
+             	break;
+             }
+  		}
+  		
+  		return tok;
+    }
+    
+	@SuppressWarnings("resource")
+	public String getPureValue(String tok){
+		try{
+		     Scanner scanner = new Scanner(tok);
+		     if(scanner.hasNextDouble()){
+		         return String.valueOf(scanner.nextDouble());
+		     } else {
+		         return null;
+		     }
+		}catch(Exception e){
+		    return null;
+		}
+	}
+    
+    // parse and evaluate formula after it has been broken into tokens
+    // formulas are tokens containing either
+    // 1. references to cells of the form Lnn, where
+    //    L is an upper-case letter and nn is one or two decimal digits, or
+    // 2. strings (including decimal integers and floats)
+    // formulas can have any number of tokens separated by operators, which
+    //    can be *, +, /, or -. Operations are performed left to right, with
+    //    no regard for operator precedence.
+    
     // parse and evaluate formula after it has been broken into tokens
     // formulas are tokens containing either
     // 1. references to cells of the form Lnn, where
@@ -140,24 +212,24 @@ public class SpreadSheet extends JFrame {
     public String parseFormula(StringTokenizer tokens, int depth) 
             throws NumberFormatException {
         if (tokens.hasMoreTokens()) {
-            String tok = tokens.nextToken();
-            tok = evaluateToken(tok, depth);
+            String tok = evaluteWrapper(tokens, depth);
             if (tok == null) return null;
             while (tokens.hasMoreTokens()) {
-                String tok2 = tokens.nextToken();
+                String tok2 = this.extractOperator(tokens);
+ 
                 if (tok2 == null) return null;
+                else if(tok2.isEmpty()) return tok;
                 if (!tokens.hasMoreTokens()) return null;
-                String tok3 = tokens.nextToken();
-                tok3 = evaluateToken(tok3, depth);
+                String tok3 = evaluteWrapper(tokens, depth);
                 if (tok3 == null) return null;
                 if (tok2.equals("+")) {
                     tok = add(tok, tok3);
                 } else if (tok2.equals("*")) {
-                	tok = multiply(tok, tok3);
+                    tok = multiply(tok, tok3);
                 } else if (tok2.equals("/")) {
-                	tok = divide(tok, tok3);
+                    tok = divide(tok, tok3);
                 } else if (tok2.equals("-")) {
-                	tok = subtract(tok, tok3);
+                    tok = subtract(tok, tok3);
                 } else return null; // invalid operator
             }
             return tok;
@@ -176,7 +248,7 @@ public class SpreadSheet extends JFrame {
             try {
                 if (depth <= maxRows * maxCols) {
                     StringTokenizer tokens = 
-                            new StringTokenizer(formula, "=+*/-", true);
+                            new StringTokenizer(formula, "=+*/-()", true);
                     if (tokens.hasMoreTokens() && 
                         (tokens.nextToken().equals("="))) {
                         String val = parseFormula(tokens, depth);
